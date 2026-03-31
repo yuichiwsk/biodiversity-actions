@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>活動手法一覧</title>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --shadow: 0 8px 24px rgba(0,0,0,0.08);
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans",
+        "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px 16px 48px;
+    }
+
+    .hero {
+      margin-bottom: 20px;
+    }
+
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      line-height: 1.2;
+    }
+
+    .hero p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(246,247,249,0.92);
+      backdrop-filter: blur(8px);
+      padding: 12px 0 16px;
+      margin-bottom: 16px;
+    }
+
+    .toolbar-inner {
+      display: grid;
+      gap: 12px;
+    }
+
+    .search-box,
+    .filter-box {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      box-shadow: var(--shadow);
+    }
+
+    .search-box input {
+      width: 100%;
+      border: none;
+      outline: none;
+      font-size: 15px;
+      background: transparent;
+      color: var(--text);
+    }
+
+    .filter-header {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .filter-title {
+      font-size: 14px;
+      color: var(--muted);
+      margin: 0;
+    }
+
+    .reset-btn {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: 0.15s ease;
+    }
+
+    .chip:hover {
+      transform: translateY(-1px);
+    }
+
+    .chip.active {
+      color: #fff;
+      border-color: transparent;
+    }
+
+    .meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 8px 2px 14px;
+      color: var(--muted);
+      font-size: 13px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 14px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      transition: 0.18s ease;
+      min-height: 132px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(0,0,0,0.10);
+    }
+
+    .method {
+      font-size: 18px;
+      line-height: 1.45;
+      font-weight: 700;
+      margin: 0 0 14px;
+      word-break: break-word;
+    }
+
+    .tag {
+      align-self: flex-start;
+      font-size: 12px;
+      line-height: 1;
+      color: #fff;
+      padding: 7px 10px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    .empty {
+      background: var(--panel);
+      border: 1px dashed var(--line);
+      border-radius: var(--radius);
+      padding: 28px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(17, 24, 39, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 100;
+    }
+
+    .modal.open {
+      display: flex;
+    }
+
+    .modal-panel {
+      width: min(720px, 100%);
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.18);
+      overflow: hidden;
+    }
+
+    .modal-body {
+      padding: 24px;
+    }
+
+    .modal-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .modal-title {
+      margin: 0 0 10px;
+      font-size: 24px;
+      line-height: 1.4;
+    }
+
+    .modal-tag {
+      display: inline-block;
+      color: #fff;
+      font-size: 12px;
+      line-height: 1;
+      padding: 8px 10px;
+      border-radius: 999px;
+    }
+
+    .close-btn {
+      border: none;
+      background: #f3f4f6;
+      width: 36px;
+      height: 36px;
+      border-radius: 999px;
+      font-size: 18px;
+      cursor: pointer;
+      flex: 0 0 auto;
+    }
+
+    .section-label {
+      font-size: 12px;
+      color: var(--muted);
+      margin: 0 0 8px;
+      letter-spacing: 0.04em;
+    }
+
+    .summary {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.9;
+      white-space: pre-wrap;
+    }
+
+    .loading {
+      padding: 20px 4px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    @media (max-width: 640px) {
+      .hero h1 {
+        font-size: 24px;
+      }
+      .method {
+        font-size: 17px;
+      }
+      .modal-body {
+        padding: 18px;
+      }
+      .modal-title {
+        font-size: 21px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <h1>活動手法一覧</h1>
+      <p>区分で絞り込み、カードをクリックすると概要を表示します。</p>
+    </header>
+
+    <div class="toolbar">
+      <div class="toolbar-inner">
+        <div class="search-box">
+          <input
+            id="searchInput"
+            type="text"
+            placeholder="活動手法や概要を検索"
+            autocomplete="off"
+          />
+        </div>
+
+        <div class="filter-box">
+          <div class="filter-header">
+            <p class="filter-title">区分でフィルタ</p>
+            <button id="resetBtn" class="reset-btn" type="button">すべて表示</button>
+          </div>
+          <div id="chips" class="chips"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="meta">
+      <div id="resultCount">0件</div>
+      <div id="currentFilter">区分: すべて</div>
+    </div>
+
+    <div id="loading" class="loading">読み込み中...</div>
+    <div id="cardGrid" class="grid" aria-live="polite"></div>
+  </div>
+
+  <div id="modal" class="modal" aria-hidden="true">
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-body">
+        <div class="modal-top">
+          <div>
+            <h2 id="modalTitle" class="modal-title"></h2>
+            <span id="modalTag" class="modal-tag"></span>
+          </div>
+          <button id="closeBtn" class="close-btn" type="button" aria-label="閉じる">×</button>
+        </div>
+
+        <p class="section-label">概要</p>
+        <p id="modalSummary" class="summary"></p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 公開時にファイル名を変えたら、ここだけ直す
+    const CSV_FILE = "30by30_clean_db_complete_v1_maru20260327.csv";
+
+    const state = {
+      allRows: [],
+      filteredRows: [],
+      selectedCategory: "",
+      searchText: ""
+    };
+
+    const els = {
+      chips: document.getElementById("chips"),
+      cardGrid: document.getElementById("cardGrid"),
+      resultCount: document.getElementById("resultCount"),
+      currentFilter: document.getElementById("currentFilter"),
+      searchInput: document.getElementById("searchInput"),
+      resetBtn: document.getElementById("resetBtn"),
+      loading: document.getElementById("loading"),
+      modal: document.getElementById("modal"),
+      modalTitle: document.getElementById("modalTitle"),
+      modalTag: document.getElementById("modalTag"),
+      modalSummary: document.getElementById("modalSummary"),
+      closeBtn: document.getElementById("closeBtn")
+    };
+
+    function stringToColor(str) {
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      const hue = Math.abs(hash) % 360;
+      return `hsl(${hue}, 55%, 45%)`;
+    }
+
+    function normalizeRow(row) {
+      return {
+        category: (row["区分"] || "").trim(),
+        method: (row["活動手法"] || "").trim(),
+        summary: (row["概要"] || "").trim()
+      };
+    }
+
+    function loadCsv() {
+      Papa.parse(CSV_FILE, {
+        download: true,
+        header: true,
+        skipEmptyLines: true,
+        complete: function(results) {
+          const rows = results.data
+            .map(normalizeRow)
+            .filter(row => row.category && row.method);
+
+          state.allRows = rows;
+          state.filteredRows = rows;
+
+          renderFilters();
+          applyFilters();
+          els.loading.style.display = "none";
+        },
+        error: function(err) {
+          els.loading.textContent = "CSVの読み込みに失敗しました。ファイル名や配置を確認してください。";
+          console.error(err);
+        }
+      });
+    }
+
+    function getCategories() {
+      return [...new Set(state.allRows.map(row => row.category))].sort((a, b) =>
+        a.localeCompare(b, "ja")
+      );
+    }
+
+    function renderFilters() {
+      els.chips.innerHTML = "";
+
+      getCategories().forEach(category => {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "chip";
+        chip.textContent = category;
+
+        const color = stringToColor(category);
+        if (state.selectedCategory === category) {
+          chip.classList.add("active");
+          chip.style.background = color;
+        }
+
+        chip.addEventListener("click", () => {
+          state.selectedCategory =
+            state.selectedCategory === category ? "" : category;
+          renderFilters();
+          applyFilters();
+        });
+
+        els.chips.appendChild(chip);
+      });
+    }
+
+    function applyFilters() {
+      const keyword = state.searchText.trim().toLowerCase();
+
+      state.filteredRows = state.allRows.filter(row => {
+        const matchesCategory =
+          !state.selectedCategory || row.category === state.selectedCategory;
+
+        const haystack = `${row.method} ${row.summary} ${row.category}`.toLowerCase();
+        const matchesSearch = !keyword || haystack.includes(keyword);
+
+        return matchesCategory && matchesSearch;
+      });
+
+      renderCards();
+      renderMeta();
+    }
+
+    function renderMeta() {
+      els.resultCount.textContent = `${state.filteredRows.length}件`;
+      els.currentFilter.textContent = `区分: ${state.selectedCategory || "すべて"}`;
+    }
+
+    function createCard(row) {
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "card";
+
+      const tagColor = stringToColor(row.category);
+
+      card.innerHTML = `
+        <div>
+          <p class="method">${escapeHtml(row.method)}</p>
+        </div>
+        <span class="tag" style="background:${tagColor}">
+          ${escapeHtml(row.category)}
+        </span>
+      `;
+
+      card.addEventListener("click", () => openModal(row));
+
+      return card;
+    }
+
+    function renderCards() {
+      els.cardGrid.innerHTML = "";
+
+      if (state.filteredRows.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = "該当する活動手法がありません。";
+        els.cardGrid.appendChild(empty);
+        return;
+      }
+
+      state.filteredRows.forEach(row => {
+        els.cardGrid.appendChild(createCard(row));
+      });
+    }
+
+    function openModal(row) {
+      els.modalTitle.textContent = row.method;
+      els.modalTag.textContent = row.category;
+      els.modalTag.style.background = stringToColor(row.category);
+      els.modalSummary.textContent = row.summary || "概要は未設定です。";
+      els.modal.classList.add("open");
+      els.modal.setAttribute("aria-hidden", "false");
+    }
+
+    function closeModal() {
+      els.modal.classList.remove("open");
+      els.modal.setAttribute("aria-hidden", "true");
+    }
+
+    function escapeHtml(str) {
+      return str
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    els.searchInput.addEventListener("input", (e) => {
+      state.searchText = e.target.value;
+      applyFilters();
+    });
+
+    els.resetBtn.addEventListener("click", () => {
+      state.selectedCategory = "";
+      state.searchText = "";
+      els.searchInput.value = "";
+      renderFilters();
+      applyFilters();
+    });
+
+    els.closeBtn.addEventListener("click", closeModal);
+
+    els.modal.addEventListener("click", (e) => {
+      if (e.target === els.modal) closeModal();
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeModal();
+    });
+
+    loadCsv();
+  </script>
+</body>
+</html>
