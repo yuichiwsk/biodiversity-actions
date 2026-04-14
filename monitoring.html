@@ -1,56 +1,610 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<title>モニタリング手法一覧（77手法）</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-body { font-family: Meiryo, sans-serif; background:#f5f6f8; margin:0; padding:20px; }
-h1 { margin-bottom:8px; }
-input[type=text]{width:100%;max-width:520px;padding:10px;font-size:14px;margin-bottom:12px;border-radius:6px;border:1px solid #ccc}
-.filters button{margin-right:6px;margin-bottom:6px;padding:6px 12px;border-radius:16px;border:none;cursor:pointer}
-.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
-.card{background:#fff;padding:16px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,.1);cursor:pointer}
-.category{display:inline-block;padding:2px 8px;font-size:12px;border-radius:12px;color:#fff}
-.共通{background:#6A5ACD;}.哺乳類{background:#8B4513;}.鳥類{background:#1E90FF;}.昆虫類{background:#228B22;}.両生類・爬虫類{background:#556B2F;}.魚類{background:#20B2AA;}.底生生物{background:#708090;}.植物（陸生）{background:#2E8B57;}.水生植物（陸水域）{background:#3CB371;}.水生植物（海域）{background:#4682B4;}.サンゴ{background:#FF7F50;}.プランクトン{background:#9370DB;}.水質調査{background:#4169E1;}.底質調査{background:#696969;}.物理環境・化学環境（湿地）{background:#A9A9A9;}.物理環境・化学環境（砂浜）{background:#A9A9A9;}.物理環境・化学環境（海域）{background:#A9A9A9;}
-.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);align-items:center;justify-content:center}
-.modal-content{background:#fff;padding:24px;border-radius:8px;max-width:720px;max-height:80vh;overflow:auto}
-.close{float:right;cursor:pointer}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>モニタリング手法一覧</title>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --shadow: 0 8px 24px rgba(0,0,0,0.08);
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans",
+        "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px 16px 48px;
+    }
+
+    .hero {
+      margin-bottom: 20px;
+    }
+
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      line-height: 1.2;
+      color: #1e60d1;
+    }
+
+    .hero p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.8;
+    }
+
+    .hero a {
+      color: #2563eb;
+    }
+
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(246,247,249,0.92);
+      backdrop-filter: blur(8px);
+      padding: 12px 0 16px;
+      margin-bottom: 16px;
+    }
+
+    .toolbar-inner {
+      display: grid;
+      gap: 12px;
+    }
+
+    .search-box,
+    .filter-box {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      box-shadow: var(--shadow);
+    }
+
+    .search-box input {
+      width: 100%;
+      border: none;
+      outline: none;
+      font-size: 15px;
+      background: transparent;
+      color: var(--text);
+    }
+
+    .filter-header {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .filter-title {
+      font-size: 14px;
+      color: var(--muted);
+      margin: 0;
+    }
+
+    .reset-btn {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: 0.15s ease;
+    }
+
+    .chip:hover {
+      transform: translateY(-1px);
+    }
+
+    .chip.active {
+      color: #fff;
+      border-color: transparent;
+    }
+
+    .meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 8px 2px 14px;
+      color: var(--muted);
+      font-size: 13px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 14px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-left: 6px solid var(--card-color, #6b7280);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      transition: 0.18s ease;
+      min-height: 132px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      text-align: left;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(0,0,0,0.10);
+    }
+
+    .method {
+      font-size: 18px;
+      line-height: 1.45;
+      font-weight: 700;
+      margin: 0 0 14px;
+      word-break: break-word;
+    }
+
+    .tag {
+      align-self: flex-start;
+      font-size: 12px;
+      line-height: 1;
+      color: #fff;
+      padding: 7px 10px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    .empty {
+      background: var(--panel);
+      border: 1px dashed var(--line);
+      border-radius: var(--radius);
+      padding: 28px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(17, 24, 39, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 100;
+    }
+
+    .modal.open {
+      display: flex;
+    }
+
+    .modal-panel {
+      width: min(720px, 100%);
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.18);
+      overflow: hidden;
+    }
+
+    .modal-body {
+      padding: 24px;
+    }
+
+    .modal-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .modal-title {
+      margin: 0 0 10px;
+      font-size: 24px;
+      line-height: 1.4;
+    }
+
+    .modal-tag {
+      display: inline-block;
+      color: #fff;
+      font-size: 12px;
+      line-height: 1;
+      padding: 8px 10px;
+      border-radius: 999px;
+    }
+
+    .close-btn {
+      border: none;
+      background: #f3f4f6;
+      width: 36px;
+      height: 36px;
+      border-radius: 999px;
+      font-size: 18px;
+      cursor: pointer;
+      flex: 0 0 auto;
+    }
+
+    .section-label {
+      font-size: 12px;
+      color: var(--muted);
+      margin: 0 0 8px;
+      letter-spacing: 0.04em;
+    }
+
+    .summary {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.9;
+      white-space: pre-wrap;
+    }
+
+    .loading {
+      padding: 20px 4px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    @media (max-width: 640px) {
+      .hero h1 {
+        font-size: 24px;
+      }
+      .method {
+        font-size: 17px;
+      }
+      .modal-body {
+        padding: 18px;
+      }
+      .modal-title {
+        font-size: 21px;
+      }
+    }
+  </style>
 </head>
 <body>
-<h1>モニタリング手法一覧（全77手法）</h1>
-<input type="text" id="searchBox" placeholder="キーワード検索（例：ドローン、DNA、底質…）">
-<div class="filters"><button onclick="setCategory('all')">すべて</button></div>
-<div id="cards" class="cards"></div>
-<div class="modal" id="modal"><div class="modal-content"><span class="close" onclick="closeModal()">×</span><h2 id="mt"></h2><p id="mc"></p><hr><p id="md"></p></div></div>
-<script>
-const data = [{'name': '目視観察・定点撮影調査', 'category': '共通', 'description': '⽬視観察と写真撮影で、場所の形状や植⽣の変化を把握'}, {'name': '衛星画像・航空写真を用いた調査', 'category': '共通', 'description': '衛星画像・航空写真で、場所の形状や植⽣の変化を把握'}, {'name': '自動撮影カメラ法', 'category': '哺乳類', 'description': '昼夜問わず哺乳類を⾃動撮影'}, {'name': '直接観察・フィールドサインの確認', 'category': '哺乳類', 'description': '歩きながら哺乳類やその痕跡を確認'}, {'name': 'ライトセンサス法', 'category': '哺乳類', 'description': '周辺をライトで照らし、光ったシカ等の⽬を確認'}, {'name': 'トラップ法', 'category': '哺乳類', 'description': '罠で⼩型哺乳類を捕獲'}, {'name': 'ラインセンサス法（ルートセンサス法）', 'category': '鳥類', 'description': '歩きながら⿃類を確認'}, {'name': 'スポットセンサス法（定点センサス法）', 'category': '鳥類', 'description': '定点から⿃類を確認'}, {'name': '鳴き声の録音調査', 'category': '鳥類', 'description': '鳴き声を録⾳して確認し、⿃類の種類を確認'}, {'name': '定点カメラ調査', 'category': '鳥類', 'description': '定点カメラにより⿃類を確認'}, {'name': 'ドローン撮影調査', 'category': '鳥類', 'description': 'ドローンで⿃類を確認'}, {'name': '目視・任意採集', 'category': '昆虫類', 'description': '花に集まったり、⾶んでいたりする昆⾍を確認'}, {'name': 'スウィーピング', 'category': '昆虫類', 'description': '⾍取り網で昆⾍を捕獲'}, {'name': 'ビーティング', 'category': '昆虫類', 'description': '樹上の昆⾍を落として捕獲'}, {'name': 'ピットホールトラップ（ベイトトラップ）', 'category': '昆虫類', 'description': '地表徘徊性昆⾍をトラップで捕獲'}, {'name': 'バナナトラップ', 'category': '昆虫類', 'description': '腐敗したバナナに誘われた昆⾍を捕獲'}, {'name': 'ライトトラップ', 'category': '昆虫類', 'description': '夜⾏性の⾍を光で集めて捕獲'}, {'name': '鳴き声調査', 'category': '昆虫類', 'description': '鳴き声で昆⾍を確認'}, {'name': '林床の探索', 'category': '昆虫類', 'description': '落ち葉等に隠れている昆⾍を確認'}, {'name': '定量採集', 'category': '昆虫類', 'description': '⽔⽣昆⾍を捕獲'}, {'name': '直接観察法', 'category': '両生類・爬虫類', 'description': '両⽣類・爬⾍類を直接確認'}, {'name': '捕獲調査', 'category': '両生類・爬虫類', 'description': '両⽣類・爬⾍類をトラップで捕獲'}, {'name': '卵塊調査', 'category': '両生類・爬虫類', 'description': '両⽣類の卵塊をカウント'}, {'name': '鳴き声調査', 'category': '両生類・爬虫類', 'description': 'カエルの鳴き声で⽣息する種を確認'}, {'name': '環境DNA分析', 'category': '両生類・爬虫類', 'description': '環境⽔中のDNAを分析し⽣物種の痕跡を推定'}, {'name': '目視観察', 'category': '魚類', 'description': '⽬視により⿂類や産卵床を確認'}, {'name': '捕獲調査', 'category': '魚類', 'description': '漁具を⽤いて⿂類等を採捕、確認'}, {'name': '潜水観察', 'category': '魚類', 'description': 'ダイバーが⽔中で⿂類の⽣息、回遊状況を⽬視、撮影'}, {'name': '環境DNA分析', 'category': '魚類', 'description': '環境⽔中のDNAを分析し⽣物種の痕跡を推定'}, {'name': '水中ドローン調査', 'category': '魚類', 'description': '⽔中ドローンで⽔中の状況を観察'}, {'name': '任意採集（定性採集）', 'category': '底生生物', 'description': '⼿網などで底⽣⽣物を採取'}, {'name': '採泥調査', 'category': '底生生物', 'description': '採泥器などで底質もろとも底⽣⽣物を採取'}, {'name': 'コドラート法・枠取り法', 'category': '底生生物', 'description': 'コドラート内の底⽣⽣物を泥質もろとも採泥器、採集容器などで採取'}, {'name': 'コドラート法', 'category': '植物（陸生）', 'description': '調査枠内の植物群落の状況を調査'}, {'name': '植物相調査', 'category': '植物（陸生）', 'description': '調査地に⽣育する植物の種類を記録'}, {'name': '毎木調査', 'category': '植物（陸生）', 'description': '森林の樹⽊の種類や林内の構造を把握'}, {'name': 'リター・シードトラップ', 'category': '植物（陸生）', 'description': '落ち葉や種の種類や量を記録'}, {'name': '衛星画像・航空写真を用いた調査', 'category': '植物（陸生）', 'description': '写真から植物の分布を把握'}, {'name': 'ドローン撮影調査', 'category': '植物（陸生）', 'description': 'ドローンで上空から植物を確認'}, {'name': '観察法（目視、採取）', 'category': '水生植物（陸水域）', 'description': '⽬視⼜は採取によって⽔⽣植物の種類を記録'}, {'name': '定量調査', 'category': '水生植物（陸水域）', 'description': '⽔⽣植物採集器を使⽤し、⽔⽣植物の種類や量を記録'}, {'name': 'コドラート法', 'category': '水生植物（陸水域）', 'description': '調査区内の植物群落の状況を調査'}, {'name': '沈水・浮葉植物帯調査', 'category': '水生植物（陸水域）', 'description': '沈⽔・浮葉植物の分布の幅を記録'}, {'name': 'ドローン撮影調査', 'category': '水生植物（陸水域）', 'description': 'ドローンで上空から植物を確認'}, {'name': 'ベルトトランセクト法（ライン調査）', 'category': '水生植物（海域）', 'description': 'ベルト状に設置した調査区内の植物群落の状況を調査'}, {'name': '定量的な標本採集', 'category': '水生植物（海域）', 'description': '海草・海藻を採取して種類を調査'}, {'name': '衛星画像・航空写真を用いた調査', 'category': '水生植物（海域）', 'description': '写真から藻場の分布を把握'}, {'name': 'ドローン空撮調査', 'category': '水生植物（海域）', 'description': 'ドローンで上空から藻場の分布を把握'}, {'name': '水上・水中ドローン調査', 'category': '水生植物（海域）', 'description': '⽔上・⽔中ドローンで藻場の状況を観察'}, {'name': '魚群探知機による音響測量調査', 'category': '水生植物（海域）', 'description': '⿂群探知機による⾳響測量で藻場分布を推定'}, {'name': 'スポットチェック法', 'category': 'サンゴ', 'description': '固定調査地点（スポット）において、潜⽔⽬視観察でサンゴの状態を確認'}, {'name': '測点調査：コドラート法', 'category': 'サンゴ', 'description': '正⽅形の調査枠（コドラート）において、潜⽔⽬視観察でサンゴの状態を確認'}, {'name': '広域調査：マンタ法', 'category': 'サンゴ', 'description': '観測者を調査船で曳航して、サンゴの分布状況を把握'}, {'name': '測線調査：ベルトトランセクト法', 'category': 'サンゴ', 'description': '測線に沿って潜⽔移動しながら、サンゴの分布状況を連続的に観察'}, {'name': '潜水目視調査', 'category': 'サンゴ', 'description': 'ダイバーがサンゴに⽣息する⽣物やサンゴの⾷害状況を⽬視、撮影記録'}, {'name': 'ドローン空撮調査', 'category': 'サンゴ', 'description': 'ドローンで上空からサンゴの分布を把握'}, {'name': '水上・水中ドローン調査', 'category': 'サンゴ', 'description': '⽔上・⽔中ドローンでサンゴの状況を観察'}, {'name': '採水・ネット捕捉調査', 'category': 'プランクトン', 'description': 'プランクトンを捕捉・分析'}, {'name': '水温', 'category': '⽔質調査', 'description': '⽔温計で⽔温を測定'}, {'name': '水位', 'category': '⽔質調査', 'description': '⽔位標で⽔位を測'}, {'name': '流速', 'category': '⽔質調査', 'description': '流速を測定'}, {'name': '流量', 'category': '⽔質調査', 'description': '流量を測定'}, {'name': '透視度／透明度', 'category': '⽔質調査', 'description': '透視度/透明度を測定'}, {'name': '水色', 'category': '⽔質調査', 'description': '⽔⾊計で⽔⾊を測定'}, {'name': 'pH', 'category': '⽔質調査', 'description': 'pHを測定'}, {'name': '栄養塩濃度', 'category': '⽔質調査', 'description': '栄養塩濃度を測定'}, {'name': '泥温', 'category': '底質調査', 'description': '棒状温度計で泥温を測定'}, {'name': '外観（性状）', 'category': '底質調査', 'description': '底質の状態(粒度)を観測･識別'}, {'name': '泥臭（臭気）', 'category': '底質調査', 'description': '泥臭を観測'}, {'name': '泥色（色相）', 'category': '底質調査', 'description': '泥⾊を観測'}, {'name': '酸化還元電位（ORP）', 'category': '底質調査', 'description': '底質表層の酸化還元電位を測定'}, {'name': '全硫化物', 'category': '底質調査', 'description': '底質中の硫化物を測定'}, {'name': '地下水位／地温調査', 'category': '物理環境・化学環境（湿地）', 'description': 'データロガー等を⽤いて地下⽔位や地温を測定'}, {'name': '土砂量調査', 'category': '物理環境・化学環境（湿地）', 'description': '沈砂地等に溜まった⼟砂量を測定'}, {'name': '汀線測量', 'category': '物理環境・化学環境（砂浜）', 'description': '測量により汀線の状況を把握'}, {'name': '汀線観測', 'category': '物理環境・化学環境（砂浜）', 'description': '衛星画像により汀線の状況を把握'}, {'name': '赤土堆積礁のSPSSの計測', 'category': '物理環境・化学環境（海域）', 'description': '透視度を想定し、底質中懸濁物質含量を算出'}];
-const cards = document.getElementById('cards');
-const searchBox = document.getElementById('searchBox');
-let currentCategory = 'all';
+  <div class="wrap">
+    <header class="hero">
+      <h1>生態系タイプ毎のモニタリング手法一覧</h1>
+      <p>
+        本サイトは、環境省「自然共生サイト」ウェブサイトに掲載されている「モニタリング手法リスト」をもとに、区分・モニタリング手法・概要をカード型に簡易整理したサイトです。
+        ここで目星をつけた上で、詳細な内容を環境省の自然共生サイトのウェブサイトでご確認することをお勧めします。
+        <br>
+        <a href="https://policies.env.go.jp/nature/biodiversity/30by30alliance/kyousei/"
+           target="_blank"
+           rel="noopener noreferrer">
+          自然共生サイト（環境省）
+        </a>
+        <br>区分を選択して絞り込み、モニタリング手法のカードをクリックすると、その概要が表示されます。<br>
+      </p>
+    </header>
 
-// build category buttons
-const categories = [...new Set(data.map(d => d.category))];
-const filterArea = document.querySelector('.filters');
-categories.forEach(c => { const b=document.createElement('button'); b.innerText=c; b.onclick=()=>setCategory(c); filterArea.appendChild(b); });
+    <div class="toolbar">
+      <div class="toolbar-inner">
+        <div class="search-box">
+          <input
+            id="searchInput"
+            type="text"
+            placeholder="モニタリング手法や概要を検索"
+            autocomplete="off"
+          />
+        </div>
 
-function render(){
-  const kw = searchBox.value.trim().toLowerCase();
-  cards.innerHTML='';
-  data.filter(d => currentCategory==='all' || d.category===currentCategory)
-      .filter(d => !kw || d.name.toLowerCase().includes(kw) || d.category.toLowerCase().includes(kw) || d.description.toLowerCase().includes(kw))
-      .forEach(d => {
-        const div=document.createElement('div'); div.className='card';
-        div.innerHTML=`<div><b>${d.name}</b></div><span class="category ${d.category}">${d.category}</span>`;
-        div.onclick=()=>openModal(d); cards.appendChild(div);
+        <div class="filter-box">
+          <div class="filter-header">
+            <p class="filter-title">区分でフィルタ</p>
+            <button id="resetBtn" class="reset-btn" type="button">すべて表示</button>
+          </div>
+          <div id="chips" class="chips"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="meta">
+      <div id="resultCount">0件</div>
+      <div id="currentFilter">区分: すべて</div>
+    </div>
+
+    <div id="loading" class="loading">読み込み中...</div>
+    <div id="cardGrid" class="grid" aria-live="polite"></div>
+  </div>
+
+  <div id="modal" class="modal" aria-hidden="true">
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-body">
+        <div class="modal-top">
+          <div>
+            <h2 id="modalTitle" class="modal-title"></h2>
+            <span id="modalTag" class="modal-tag"></span>
+          </div>
+          <button id="closeBtn" class="close-btn" type="button" aria-label="閉じる">×</button>
+        </div>
+
+        <p class="section-label">概要</p>
+        <p id="modalSummary" class="summary"></p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const CSV_FILE = "monitoring_v1.csv";
+
+    const CATEGORY_ORDER = [
+      "森林（天然林）",
+      "森林（⼈⼯林）",
+      "森林（⾥⼭林）",
+      "自然草原",
+      "⼆次草原・草地",
+      "創出緑地",
+      "水田",
+      "畑・果樹園・牧草地",
+      "河川・湖沼",
+      "⾼層湿原・中間湿原・湧⽔湿地",
+      "低層湿原・湿地",
+      "砂浜",
+      "干潟・マングローブ林",
+      "サンゴ（礁）",
+      "藻場・岩礁"
+    ];
+
+    const CATEGORY_GROUPS = {
+      "森林": ["森林（天然林）", "森林（⼈⼯林）", "森林（⾥⼭林）"],
+      "草地": ["自然草原", "⼆次草原・草地", "創出緑地"],
+      "農地": ["水田", "畑・果樹園・牧草地"],
+      "淡水域": ["河川・湖沼", "⾼層湿原・中間湿原・湧⽔湿地", "低層湿原・湿地"],
+      "海域": ["砂浜", "干潟・マングローブ林", "サンゴ（礁）", "藻場・岩礁"]
+    };
+
+    const GROUP_COLORS = {
+      "森林": "#1b5e20",
+      "草地": "#66bb6a",
+      "農地": "#b97a3d",
+      "淡水域": "#4fc3f7",
+      "海域": "#0d47a1"
+    };
+
+    const state = {
+      allRows: [],
+      filteredRows: [],
+      selectedCategory: "",
+      searchText: ""
+    };
+
+    const els = {
+      chips: document.getElementById("chips"),
+      cardGrid: document.getElementById("cardGrid"),
+      resultCount: document.getElementById("resultCount"),
+      currentFilter: document.getElementById("currentFilter"),
+      searchInput: document.getElementById("searchInput"),
+      resetBtn: document.getElementById("resetBtn"),
+      loading: document.getElementById("loading"),
+      modal: document.getElementById("modal"),
+      modalTitle: document.getElementById("modalTitle"),
+      modalTag: document.getElementById("modalTag"),
+      modalSummary: document.getElementById("modalSummary"),
+      closeBtn: document.getElementById("closeBtn")
+    };
+
+    function getCategoryColor(category) {
+      for (const group in CATEGORY_GROUPS) {
+        if (CATEGORY_GROUPS[group].includes(category)) {
+          return GROUP_COLORS[group];
+        }
+      }
+      return "#6b7280";
+    }
+
+    function normalizeRow(row) {
+      return {
+        category: (row["区分"] || "").trim(),
+        method: (row["モニタリング手法"] || "").trim(),
+        summary: (row["概要"] || "").trim()
+      };
+    }
+
+    function loadCsv() {
+      Papa.parse(CSV_FILE, {
+        download: true,
+        header: true,
+        skipEmptyLines: true,
+        complete: function(results) {
+          const rows = results.data
+            .map(normalizeRow)
+            .filter(row => row.category && row.method);
+
+          state.allRows = rows;
+          state.filteredRows = rows;
+
+          renderFilters();
+          applyFilters();
+          els.loading.style.display = "none";
+        },
+        error: function(err) {
+          els.loading.textContent = "CSVの読み込みに失敗しました。ファイル名や配置を確認してください。";
+          console.error(err);
+        }
       });
-}
-function setCategory(cat){ currentCategory=cat; render(); }
-function openModal(d){ mt.innerText=d.name; mc.innerText='区分：'+d.category; md.innerText=d.description; modal.style.display='flex'; }
-function closeModal(){ modal.style.display='none'; }
-searchBox.addEventListener('input', render);
-render();
-</script>
+    }
+
+    function getCategories() {
+      const unique = [...new Set(state.allRows.map(row => row.category))];
+      return CATEGORY_ORDER.filter(cat => unique.includes(cat));
+    }
+
+    function renderFilters() {
+      els.chips.innerHTML = "";
+
+      getCategories().forEach(category => {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "chip";
+        chip.textContent = category;
+
+        const color = getCategoryColor(category);
+
+        if (state.selectedCategory === category) {
+          chip.classList.add("active");
+          chip.style.background = color;
+        } else {
+          chip.style.background = "#fff";
+          chip.style.color = "#1f2937";
+        }
+
+        chip.addEventListener("click", () => {
+          state.selectedCategory =
+            state.selectedCategory === category ? "" : category;
+          renderFilters();
+          applyFilters();
+        });
+
+        els.chips.appendChild(chip);
+      });
+    }
+
+    function applyFilters() {
+      const keyword = state.searchText.trim().toLowerCase();
+
+      state.filteredRows = state.allRows.filter(row => {
+        const matchesCategory =
+          !state.selectedCategory || row.category === state.selectedCategory;
+
+        const haystack = `${row.method} ${row.summary} ${row.category}`.toLowerCase();
+        const matchesSearch = !keyword || haystack.includes(keyword);
+
+        return matchesCategory && matchesSearch;
+      });
+
+      renderCards();
+      renderMeta();
+    }
+
+    function renderMeta() {
+      els.resultCount.textContent = `${state.filteredRows.length}件`;
+      els.currentFilter.textContent = `区分: ${state.selectedCategory || "すべて"}`;
+    }
+
+    function createCard(row) {
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "card";
+
+      const tagColor = getCategoryColor(row.category);
+      card.style.setProperty("--card-color", tagColor);
+
+      card.innerHTML = `
+        <div>
+          <p class="method">${escapeHtml(row.method)}</p>
+        </div>
+        <span class="tag" style="background:${tagColor}">
+          ${escapeHtml(row.category)}
+        </span>
+      `;
+
+      card.addEventListener("click", () => openModal(row));
+
+      return card;
+    }
+
+    function renderCards() {
+      els.cardGrid.innerHTML = "";
+
+      if (state.filteredRows.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = "該当するモニタリング手法がありません。";
+        els.cardGrid.appendChild(empty);
+        return;
+      }
+
+      state.filteredRows.forEach(row => {
+        els.cardGrid.appendChild(createCard(row));
+      });
+    }
+
+    function openModal(row) {
+      els.modalTitle.textContent = row.method;
+      els.modalTag.textContent = row.category;
+      els.modalTag.style.background = getCategoryColor(row.category);
+      els.modalSummary.textContent = row.summary || "概要は未設定です。";
+      els.modal.classList.add("open");
+      els.modal.setAttribute("aria-hidden", "false");
+    }
+
+    function closeModal() {
+      els.modal.classList.remove("open");
+      els.modal.setAttribute("aria-hidden", "true");
+    }
+
+    function escapeHtml(str) {
+      return str
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    els.searchInput.addEventListener("input", (e) => {
+      state.searchText = e.target.value;
+      applyFilters();
+    });
+
+    els.resetBtn.addEventListener("click", () => {
+      state.selectedCategory = "";
+      state.searchText = "";
+      els.searchInput.value = "";
+      renderFilters();
+      applyFilters();
+    });
+
+    els.closeBtn.addEventListener("click", closeModal);
+
+    els.modal.addEventListener("click", (e) => {
+      if (e.target === els.modal) closeModal();
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeModal();
+    });
+
+    loadCsv();
+  </script>
 </body>
 </html>
