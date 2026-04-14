@@ -40,12 +40,18 @@
       margin: 0 0 8px;
       font-size: 28px;
       line-height: 1.2;
+      color: #1e60d1;
     }
 
     .hero p {
       margin: 0;
       color: var(--muted);
       font-size: 14px;
+      line-height: 1.8;
+    }
+
+    .hero a {
+      color: #2563eb;
     }
 
     .toolbar {
@@ -151,6 +157,7 @@
     .card {
       background: var(--panel);
       border: 1px solid var(--line);
+      border-left: 6px solid var(--card-color, #6b7280);
       border-radius: var(--radius);
       padding: 16px;
       box-shadow: var(--shadow);
@@ -160,6 +167,7 @@
       display: flex;
       flex-direction: column;
       justify-content: space-between;
+      text-align: left;
     }
 
     .card:hover {
@@ -295,14 +303,15 @@
   <div class="wrap">
     <header class="hero">
       <h1>生態系タイプ毎の活動手法一覧</h1>
-      <p> 本サイトは、環境省「自然共生サイト」ウェブサイトに掲載されている「生態系タイプ毎の活動手法リスト」をもとに、区分・活動手法・概要を簡易整理して作成した試験サイトです。
+      <p>
+        本サイトは、環境省「自然共生サイト」ウェブサイトに掲載されている「生態系タイプ毎の活動手法リスト」をもとに、区分・活動手法・概要を簡易整理して作成した試験サイトです。
         掲載内容は当該資料の情報を抜粋した簡易検索用の情報であり、詳細な内容は環境省のウェブサイトの資料をご確認ください。
         <br>区分で絞り込み、カードをクリックすると概要を表示します。<br>
         <a href="https://policies.env.go.jp/nature/biodiversity/30by30alliance/kyousei/"
-         target="_blank"
-         rel="noopener noreferrer">
-      自然共生サイト（環境省）
-    </a>
+           target="_blank"
+           rel="noopener noreferrer">
+          自然共生サイト（環境省）
+        </a>
       </p>
     </header>
 
@@ -354,8 +363,41 @@
   </div>
 
   <script>
-    // 公開時にファイル名を変えたら、ここだけ直す
     const CSV_FILE = "30by30_actions_v1.csv";
+
+    const CATEGORY_ORDER = [
+      "森林（天然林）",
+      "森林（⼈⼯林）",
+      "森林（⾥⼭林）",
+      "自然草原",
+      "⼆次草原・草地",
+      "創出緑地",
+      "水田",
+      "畑・果樹園・牧草地",
+      "河川・湖沼",
+      "⾼層湿原・中間湿原・湧⽔湿地",
+      "低層湿原・湿地",
+      "砂浜",
+      "干潟・マングローブ林",
+      "サンゴ（礁）",
+      "藻場・岩礁"
+    ];
+
+    const CATEGORY_GROUPS = {
+      "森林": ["森林（天然林）", "森林（⼈⼯林）", "森林（⾥⼭林）"],
+      "草地": ["自然草原", "⼆次草原・草地", "創出緑地"],
+      "農地": ["水田", "畑・果樹園・牧草地"],
+      "淡水域": ["河川・湖沼", "⾼層湿原・中間湿原・湧⽔湿地", "低層湿原・湿地"],
+      "海域": ["砂浜", "干潟・マングローブ林", "サンゴ（礁）", "藻場・岩礁"]
+    };
+
+    const GROUP_COLORS = {
+      "森林": "#1b5e20",
+      "草地": "#66bb6a",
+      "農地": "#b97a3d",
+      "淡水域": "#4fc3f7",
+      "海域": "#0d47a1"
+    };
 
     const state = {
       allRows: [],
@@ -379,13 +421,13 @@
       closeBtn: document.getElementById("closeBtn")
     };
 
-    function stringToColor(str) {
-      let hash = 0;
-      for (let i = 0; i < str.length; i++) {
-        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    function getCategoryColor(category) {
+      for (const group in CATEGORY_GROUPS) {
+        if (CATEGORY_GROUPS[group].includes(category)) {
+          return GROUP_COLORS[group];
+        }
       }
-      const hue = Math.abs(hash) % 360;
-      return `hsl(${hue}, 55%, 45%)`;
+      return "#6b7280";
     }
 
     function normalizeRow(row) {
@@ -421,9 +463,8 @@
     }
 
     function getCategories() {
-      return [...new Set(state.allRows.map(row => row.category))].sort((a, b) =>
-        a.localeCompare(b, "ja")
-      );
+      const unique = [...new Set(state.allRows.map(row => row.category))];
+      return CATEGORY_ORDER.filter(cat => unique.includes(cat));
     }
 
     function renderFilters() {
@@ -435,10 +476,14 @@
         chip.className = "chip";
         chip.textContent = category;
 
-        const color = stringToColor(category);
+        const color = getCategoryColor(category);
+
         if (state.selectedCategory === category) {
           chip.classList.add("active");
           chip.style.background = color;
+        } else {
+          chip.style.background = "#fff";
+          chip.style.color = "#1f2937";
         }
 
         chip.addEventListener("click", () => {
@@ -479,7 +524,8 @@
       card.type = "button";
       card.className = "card";
 
-      const tagColor = stringToColor(row.category);
+      const tagColor = getCategoryColor(row.category);
+      card.style.setProperty("--card-color", tagColor);
 
       card.innerHTML = `
         <div>
@@ -514,7 +560,7 @@
     function openModal(row) {
       els.modalTitle.textContent = row.method;
       els.modalTag.textContent = row.category;
-      els.modalTag.style.background = stringToColor(row.category);
+      els.modalTag.style.background = getCategoryColor(row.category);
       els.modalSummary.textContent = row.summary || "概要は未設定です。";
       els.modal.classList.add("open");
       els.modal.setAttribute("aria-hidden", "false");
