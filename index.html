@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>自然共生サイト 活動・モニタリング一覧</title>
+
+<style>
+body {
+  font-family: sans-serif;
+  background: #f5f7f9;
+  margin: 0;
+  padding: 0;
+  color: #333;
+}
+
+.container {
+  max-width: 900px;
+  margin: 60px auto;
+  padding: 20px;
+}
+
+h1 {
+  font-size: 28px;
+  margin-bottom: 10px;
+}
+
+.description {
+  font-size: 14px;
+  color: #555;
+  line-height: 1.8;
+  margin-bottom: 30px;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.card {
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  text-decoration: none;
+  color: #333;
+  transition: 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+}
+
+.card-title {
+  font-size: 20px;
+  margin-bottom: 10px;
+}
+
+.card-desc {
+  font-size: 13px;
+  color: #666;
+}
+
+.footer {
+  margin-top: 50px;
+  font-size: 12px;
+  color: #666;
+  line-height: 1.7;
+}
+
+a {
+  color: #2563eb;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>自然共生サイト 活動・モニタリング整理ビュー</h1>
+
+<p class="description">
+本サイトは、環境省「自然共生サイト」ウェブサイトに掲載されている
+「生態系タイプ毎の活動手法リスト」および「モニタリング手法リスト」をもとに、
+その内容を抜粋して、見やすく整理したサイトです。<br><br>
+掲載内容は上述の資料の情報を抜粋した簡易検索用の情報であり、
+詳細な内容は、環境省のウェブサイトの資料をご確認ください。
+</p>
+
+<div class="cards">
+
+<a href="actions.html" class="card">
+  <div class="card-title">活動手法一覧</div>
+  <div class="card-desc">
+    生態系タイプごとの活動手法をカード形式で閲覧・検索できます
+  </div>
+</a>
+
+<a href="monitoring.html" class="card">
+  <div class="card-title">モニタリング手法一覧</div>
+  <div class="card-desc">
+    生物多様性の評価に用いるモニタリング手法を整理しています
+  </div>
+</a>
+
+</div>
+
+<div class="footer">
+<p>
+▶ <a href="https://policies.env.go.jp/nature/biodiversity/30by30alliance/kyousei/"
+target="_blank" rel="noopener noreferrer">
+自然共生サイト（環境省）
+</a>
+</p>
+</div>
+
+</div>
+
+</body>
+</html>
