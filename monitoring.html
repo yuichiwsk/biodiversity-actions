@@ -443,6 +443,14 @@ const GROUP_COLORS = {
       closeBtn: document.getElementById("closeBtn")
     };
 
+    const state = {
+  allRows: [],
+  filteredRows: [],
+  selectedCategory: "",
+  searchText: ""
+    };
+
+    
     function getCategoryColor(category) {
       for (const group in CATEGORY_GROUPS) {
         if (CATEGORY_GROUPS[group].includes(category)) {
